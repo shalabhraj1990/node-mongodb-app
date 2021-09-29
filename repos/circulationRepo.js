@@ -4,6 +4,70 @@ function circulationRepo() {
     const url = 'mongodb://localhost:27017';
     const dbName = 'circulation';
     const client = new MongoClient(url);
+    function averageFinalisWithCirculation() {
+        return new Promise(async (resolve, reject) => {
+            const client = new MongoClient(url);
+            try {
+                await client.connect();
+                const db = client.db(dbName);
+                const average = await db.collection('newspaper')
+                    .aggregate([
+                        {
+                            $project: {
+                                "Newspaper": 1,
+                                "Change in Daily Circulation, 2004-2013": 1,
+                                "Pulitzer Prize Winners and Finalists, 1990-2014": 1,
+                                overAllChange: {
+                                    $cond: {
+                                        if: { $gte: ["$Change in Daily Circulation, 2004-2013", 0]}, then: "positive", else: "negative" 
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group:
+                            {
+                                _id: "$overAllChange",
+                                avgFinalist: { $avg: "$Pulitzer Prize Winners and Finalists, 1990-2014" }
+                            }
+                        }
+                    ]).toArray();
+                resolve(average);
+                client.close();
+            }
+            catch (err) {
+                reject(err);
+
+            }
+        });
+    }
+
+    function averageFinalist() {
+        return new Promise(async (resolve, reject) => {
+            const client = new MongoClient(url);
+            try {
+                await client.connect();
+                const db = client.db(dbName);
+                const average = await db.collection('newspaper')
+                    .aggregate([
+                        {
+                            $group:
+                            {
+                                _id: null,
+                                avgFinalist: { $avg: "$Pulitzer Prize Winners and Finalists, 1990-2003" }
+                            }
+                        }
+                    ]).toArray();
+                resolve(average[0].avgFinalist);
+                client.close();
+            }
+            catch (err) {
+                reject(err);
+
+            }
+        });
+    }
+
     function deleteById(id) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -98,7 +162,7 @@ function circulationRepo() {
         })
     }
 
-    return { loadData, get, findById, add, update, deleteById };
+    return { loadData, get, findById, add, update, deleteById, averageFinalist,averageFinalisWithCirculation };
 }
 
 module.exports = circulationRepo();

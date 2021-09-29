@@ -63,6 +63,13 @@ async function main() {
         //delete
         const deletedItem = await circulationRepo.deleteById(addedID);
         assert(deletedItem);
+        //Aggregation average finalist
+        const avgFinalist = await circulationRepo.averageFinalist();
+        console.log('avg fianlist :'+avgFinalist);
+
+         //complect mutiple Aggregation 
+         const avgFinalistCirculation = await circulationRepo.averageFinalisWithCirculation();
+         console.log('avg fianlist circulation:'+JSON.stringify(avgFinalistCirculation));
         //drop database
         await client.db(dbName).dropDatabase();
         console.log(await admin.listDatabases());
